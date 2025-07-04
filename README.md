@@ -18,6 +18,8 @@ A modern e-commerce website for BLAZE Streetwear, a premium Moroccan streetwear 
 - Contact form
 - Progressive Web App (PWA) support
 - Admin panel for order management
+- Clean URL structure (HOMEPAGE instead of index.html)
+- Product names in URLs
 
 ## Technologies Used
 
@@ -32,12 +34,12 @@ A modern e-commerce website for BLAZE Streetwear, a premium Moroccan streetwear 
 
 1. Clone the repository:
 ```
-git clone https://github.com/Blazeblazz/Blaze-Shop.git
+git clone https://github.com/Blazeblazz/Blaze-New.git
 ```
 
 2. Navigate to the project directory:
 ```
-cd Blaze-Shop
+cd Blaze-New
 ```
 
 3. Open `index.html` in your browser or use a local server.
@@ -89,11 +91,12 @@ To access the admin panel:
 ├── promo-popup.js          # Promotional popup functionality
 ├── mobile-nav.js           # Mobile navigation functionality
 ├── pwa.js                  # PWA functionality
+├── url-handler.js          # URL handling for clean URLs
 ├── manifest.json           # PWA manifest
 ├── service-worker.js       # Service worker for offline support
 ├── robots.txt              # Instructions for search engine crawlers
 ├── sitemap.xml             # Site structure for search engines
-├── .htaccess               # Server configuration
+├── .htaccess               # Server configuration for URL rewriting
 └── admin/                  # Admin panel
     ├── index.html          # Admin dashboard
     ├── login.html          # Admin login
