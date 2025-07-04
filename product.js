@@ -1,22 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Cart functionality is now handled by cart.js
     
-    // Thumbnail gallery functionality
-    const thumbnails = document.querySelectorAll('.thumbnail');
-    const mainImage = document.getElementById('main-product-image');
-    
-    thumbnails.forEach(thumbnail => {
-        thumbnail.addEventListener('click', function() {
-            // Update active thumbnail
-            thumbnails.forEach(t => t.classList.remove('active'));
-            this.classList.add('active');
-            
-            // Update main image
-            const imageUrl = this.getAttribute('data-image');
-            mainImage.src = imageUrl;
-        });
-    });
-    
     // Size guide link
     const sizeGuideLink = document.querySelector('.size-guide-link');
     

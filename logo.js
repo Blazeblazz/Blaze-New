@@ -10,12 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Create link to homepage
         const link = document.createElement('a');
-        link.href = 'index.html';
-        
-        // Create sparkle element
-        const sparkle = document.createElement('span');
-        sparkle.className = 'logo-sparkle';
-        sparkle.innerHTML = '✨';
+        link.href = 'HOMEPAGE';
         
         // Create logo text
         const text = document.createElement('span');
@@ -23,7 +18,6 @@ document.addEventListener('DOMContentLoaded', function() {
         text.textContent = 'BLAZE';
         
         // Append elements
-        link.appendChild(sparkle);
         link.appendChild(text);
         logo.appendChild(link);
     });

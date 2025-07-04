@@ -17,23 +17,12 @@
 .logo-text {
     font-family: 'Poppins', sans-serif;
     font-weight: 900;
-    font-size: 24px;
+    font-size: 26px;
     color: #ffffff;
-    letter-spacing: 1px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
 }
 
 .logo-sparkle {
-    position: absolute;
-    left: -15px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: white;
-    font-size: 14px;
-    animation: sparkle 2s infinite;
-}
-
-@keyframes sparkle {
-    0% { opacity: 0.4; transform: translateY(-50%) scale(0.8); }
-    50% { opacity: 1; transform: translateY(-50%) scale(1.2); }
-    100% { opacity: 0.4; transform: translateY(-50%) scale(0.8); }
+    display: none;
 }
