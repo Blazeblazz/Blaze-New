@@ -1,13 +1,13 @@
 // Checkout Page Functionality
 document.addEventListener('DOMContentLoaded', function() {
-    // Check if API script is already loaded
-    if (!window.saveOrderToServer) {
-        console.log('Loading API script...');
-        const apiScript = document.createElement('script');
-        apiScript.src = 'api.js';
-        document.head.appendChild(apiScript);
+    // Load orders script
+    if (typeof ORDERS === 'undefined') {
+        console.log('Loading orders script...');
+        const ordersScript = document.createElement('script');
+        ordersScript.src = 'orders.js';
+        document.head.appendChild(ordersScript);
     } else {
-        console.log('API script already loaded');
+        console.log('Orders script already loaded');
     }
     
     // Load cart items
@@ -26,49 +26,40 @@ document.addEventListener('DOMContentLoaded', function() {
             const cartItems = JSON.parse(localStorage.getItem('cart')) || [];
             const subtotal = parseInt(document.getElementById('subtotal').textContent);
             
-            const orderData = {
-                customer: {
-                    name: formData.get('name'),
-                    phone: formData.get('phone'),
-                    city: formData.get('city')
-                },
-                payment: 'cod',
-                items: cartItems,
-                subtotal: subtotal,
-                shipping: 'Gratuit',
-                total: subtotal,
-                date: new Date().toISOString().split('T')[0],
-                status: 'new',
-                id: generateOrderId()
-            };
-            
-            // Send order data to server
-            console.log('Order submitted:', orderData);
-            
-            // Track purchase event for Facebook Pixel
             try {
-                fbq('track', 'Purchase', {
-                    value: subtotal,
-                    currency: 'MAD'
-                });
-            } catch (e) {
-                console.log('Facebook Pixel error:', e);
-            }
-            
-            try {
-                // Wait for API script to load
-                await waitForApi();
+                // Wait for orders script to load
+                await waitForOrdersSystem();
                 
-                console.log('API loaded, saving order:', orderData);
+                const orderData = {
+                    customer: {
+                        name: formData.get('name'),
+                        phone: formData.get('phone'),
+                        city: formData.get('city')
+                    },
+                    payment: 'cod',
+                    items: cartItems,
+                    subtotal: subtotal,
+                    shipping: 'Gratuit',
+                    total: subtotal,
+                    date: new Date().toISOString().split('T')[0],
+                    status: 'new',
+                    id: ORDERS.generateOrderId()
+                };
                 
-                // Save to JSONBin
-                const success = await window.saveOrderToServer(orderData);
+                console.log('Order created:', orderData);
                 
-                if (!success) {
-                    console.warn('JSONBin save failed, using localStorage fallback');
-                    // Fallback to localStorage if JSONBin fails
-                    window.saveOrderToLocalStorage(orderData);
+                // Track purchase event for Facebook Pixel
+                try {
+                    fbq('track', 'Purchase', {
+                        value: subtotal,
+                        currency: 'MAD'
+                    });
+                } catch (e) {
+                    console.log('Facebook Pixel error:', e);
                 }
+                
+                // Save order using our orders system
+                await ORDERS.saveOrder(orderData);
                 
                 // Show confirmation
                 alert('Votre commande a été passée avec succès! Vous recevrez un appel pour confirmer.');
@@ -79,49 +70,62 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Redirect to confirmation page
                 window.location.href = 'confirmation.html';
             } catch (error) {
-                console.error('Error saving order:', error);
+                console.error('Error processing order:', error);
                 
-                // Save to localStorage as last resort
+                // Create a simple order object for emergency backup
+                const emergencyOrder = {
+                    customer: {
+                        name: formData.get('name'),
+                        phone: formData.get('phone'),
+                        city: formData.get('city')
+                    },
+                    items: cartItems,
+                    total: subtotal,
+                    date: new Date().toISOString().split('T')[0],
+                    id: 'EMERGENCY-' + Date.now()
+                };
+                
+                // Save to localStorage as emergency backup
                 try {
-                    const orders = JSON.parse(localStorage.getItem('orders')) || [];
-                    orders.push(orderData);
-                    localStorage.setItem('orders', JSON.stringify(orders));
-                    console.log('Order saved to localStorage as fallback');
+                    const emergencyOrders = JSON.parse(localStorage.getItem('emergency_orders')) || [];
+                    emergencyOrders.push(emergencyOrder);
+                    localStorage.setItem('emergency_orders', JSON.stringify(emergencyOrders));
+                    console.log('Order saved to emergency backup');
                     
                     // Still show success and redirect
                     alert('Votre commande a été passée avec succès! Vous recevrez un appel pour confirmer.');
                     localStorage.removeItem('cart');
                     window.location.href = 'confirmation.html';
                 } catch (localStorageError) {
-                    console.error('Failed to save to localStorage:', localStorageError);
+                    console.error('Failed to save emergency backup:', localStorageError);
                     alert('Une erreur est survenue. Veuillez réessayer.');
                 }
             }
         }
     });
     
-    // Wait for API script to load
-    function waitForApi() {
+    // Wait for Orders system to load
+    function waitForOrdersSystem() {
         return new Promise((resolve, reject) => {
             let attempts = 0;
             const maxAttempts = 50; // 5 seconds max wait time
             
-            const checkApi = () => {
+            const checkOrdersSystem = () => {
                 attempts++;
-                console.log(`Checking for API (attempt ${attempts})...`);
+                console.log(`Checking for Orders system (attempt ${attempts})...`);
                 
-                if (window.saveOrderToServer) {
-                    console.log('API functions found!');
+                if (window.ORDERS) {
+                    console.log('Orders system found!');
                     resolve();
                 } else if (attempts >= maxAttempts) {
-                    console.error('API functions not found after maximum attempts');
-                    reject(new Error('API functions not loaded'));
+                    console.error('Orders system not found after maximum attempts');
+                    reject(new Error('Orders system not loaded'));
                 } else {
-                    setTimeout(checkApi, 100);
+                    setTimeout(checkOrdersSystem, 100);
                 }
             };
             
-            checkApi();
+            checkOrdersSystem();
         });
     }
     

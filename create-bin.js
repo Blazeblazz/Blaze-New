@@ -1,10 +1,6 @@
-// Script to create a JSONBin.io bin for storing orders
-// Run this script once to set up your bin
+// Simple script to create a new bin
+const API_KEY = "$2b$10$W7Y1w05rI7FhqCSUCB/tRuDJYO2fRlTwgv2s3je3OlExS3oOz9UzG";
 
-// Replace with your actual API key from JSONBin.io
-const API_KEY = "$2a$10$YOUR_API_KEY";
-
-// Function to create a new bin
 async function createBin() {
     try {
         const response = await fetch("https://api.jsonbin.io/v3/b", {
@@ -12,21 +8,18 @@ async function createBin() {
             headers: {
                 "Content-Type": "application/json",
                 "X-Master-Key": API_KEY,
-                "X-Bin-Private": "true",
-                "X-Bin-Name": "BLAZE-Orders"
+                "X-Bin-Name": "BLAZE Orders"
             },
-            body: JSON.stringify({"orders":[]}) // Object with empty orders array
+            body: JSON.stringify({ orders: [] })
         });
-
+        
         if (!response.ok) {
             throw new Error(`Failed to create bin: ${response.status}`);
         }
-
-        const data = await response.json();
-        console.log("Bin created successfully!");
-        console.log("Your Bin ID:", data.metadata.id);
-        console.log("Update your api.js file with this ID");
         
+        const data = await response.json();
+        console.log("New bin created successfully!");
+        console.log("Bin ID:", data.metadata.id);
         return data.metadata.id;
     } catch (error) {
         console.error("Error creating bin:", error);
@@ -35,4 +28,8 @@ async function createBin() {
 }
 
 // Run the function
-createBin();
+createBin().then(binId => {
+    if (binId) {
+        console.log(`Use this bin ID in your orders.js file: ${binId}`);
+    }
+});

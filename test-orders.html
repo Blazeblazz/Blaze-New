@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Orders System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Orders System Test</h1>
+    
+    <div>
+        <button id="createOrder">Create Test Order</button>
+        <button id="viewOrders">View All Orders</button>
+        <button id="viewLocalOrders">View Local Orders</button>
+    </div>
+    
+    <div id="results">
+        <p>Click a button to test the orders system.</p>
+    </div>
+    
+    <script src="orders.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const resultsDiv = document.getElementById('results');
+            
+            // Display configuration
+            resultsDiv.innerHTML += `
+                <h3>Configuration:</h3>
+                <pre>API URL: ${ORDERS.API_URL}
+BIN ID: ${ORDERS.BIN_ID}
+API KEY: ${ORDERS.API_KEY ? ORDERS.API_KEY.substring(0, 10) + '...' : 'Not set'}</pre>
+            `;
+            
+            // Create Order Button
+            document.getElementById('createOrder').addEventListener('click', async function() {
+                resultsDiv.innerHTML += `<p>Creating test order...</p>`;
+                
+                const testOrder = {
+                    id: ORDERS.generateOrderId(),
+                    date: new Date().toISOString().split('T')[0],
+                    customer: {
+                        name: "Test Customer",
+                        phone: "(212) 123-456789",
+                        city: "Test City"
+                    },
+                    items: [
+                        {
+                            name: "TEST PRODUCT",
+                            price: "129",
+                            quantity: 1,
+                            color: "white",
+                            image: "images/products/Rise.webp"
+                        }
+                    ],
+                    subtotal: 129,
+                    shipping: "Gratuit",
+                    total: 129,
+                    status: "new",
+                    payment: "cod"
+                };
+                
+                try {
+                    const success = await ORDERS.saveOrder(testOrder);
+                    if (success) {
+                        resultsDiv.innerHTML += `<p class="success">Test order created successfully!</p>`;
+                        resultsDiv.innerHTML += `<pre>${JSON.stringify(testOrder, null, 2)}</pre>`;
+                    } else {
+                        resultsDiv.innerHTML += `<p class="error">Failed to save to JSONBin, but order was saved to localStorage.</p>`;
+                    }
+                } catch (error) {
+                    resultsDiv.innerHTML += `<p class="error">Error: ${error.message}</p>`;
+                }
+            });
+            
+            // View Orders Button
+            document.getElementById('viewOrders').addEventListener('click', async function() {
+                resultsDiv.innerHTML += `<p>Fetching all orders...</p>`;
+                
+                try {
+                    const orders = await ORDERS.getAllOrders();
+                    resultsDiv.innerHTML += `<p class="success">Found ${orders.length} orders:</p>`;
+                    resultsDiv.innerHTML += `<pre>${JSON.stringify(orders, null, 2)}</pre>`;
+                } catch (error) {
+                    resultsDiv.innerHTML += `<p class="error">Error: ${error.message}</p>`;
+                }
+            });
+            
+            // View Local Orders Button
+            document.getElementById('viewLocalOrders').addEventListener('click', function() {
+                resultsDiv.innerHTML += `<p>Fetching local orders...</p>`;
+                
+                const orders = ORDERS.getFromLocalStorage();
+                resultsDiv.innerHTML += `<p class="success">Found ${orders.length} local orders:</p>`;
+                resultsDiv.innerHTML += `<pre>${JSON.stringify(orders, null, 2)}</pre>`;
+                
+                // Also check emergency orders
+                try {
+                    const emergencyOrders = JSON.parse(localStorage.getItem('emergency_orders')) || [];
+                    if (emergencyOrders.length > 0) {
+                        resultsDiv.innerHTML += `<p class="success">Found ${emergencyOrders.length} emergency orders:</p>`;
+                        resultsDiv.innerHTML += `<pre>${JSON.stringify(emergencyOrders, null, 2)}</pre>`;
+                    }
+                } catch (error) {
+                    resultsDiv.innerHTML += `<p class="error">Error reading emergency orders: ${error.message}</p>`;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

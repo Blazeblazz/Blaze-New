@@ -1,38 +1,24 @@
 // Admin Panel Functionality
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Admin panel initializing...');
-    // Initialize admin panel with a slight delay to ensure API is loaded
-    setTimeout(initializeAdmin, 500);
+    // Initialize admin panel
+    initializeAdmin();
     
     // Function to initialize admin panel
     async function initializeAdmin() {
         try {
             console.log('Initializing admin panel...');
             
-            // Check if API functions are available
-            if (!window.getOrdersFromServer) {
-                console.error('API functions not available');
-                throw new Error('API functions not available');
+            // Check if ADMIN_ORDERS is available
+            if (!window.ADMIN_ORDERS) {
+                console.error('ADMIN_ORDERS not available');
+                throw new Error('ADMIN_ORDERS not available');
             }
             
-            // Try to get orders from server first
-            console.log('Fetching orders from server...');
-            const serverData = await window.getOrdersFromServer();
-            console.log('Server data received:', serverData);
-            
-            let orders = [];
-            if (serverData && serverData.orders) {
-                orders = serverData.orders;
-                console.log(`Found ${orders.length} orders on server`);
-            }
-            
-            // If server request failed or returned no orders, check localStorage
-            if (!orders || orders.length === 0) {
-                console.log('No orders from server, checking localStorage...');
-                const localOrders = JSON.parse(localStorage.getItem('orders')) || [];
-                console.log(`Found ${localOrders.length} orders in localStorage`);
-                orders = localOrders;
-            }
+            // Get orders from all sources
+            console.log('Fetching orders from all sources...');
+            const orders = await ADMIN_ORDERS.getAllOrders();
+            console.log(`Found ${orders.length} orders total`);
     
     // If no orders in localStorage, use sample data
     if (orders.length === 0) {
@@ -247,39 +233,28 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Delete order buttons
         document.querySelectorAll('.btn-delete').forEach(button => {
-            button.addEventListener('click', function() {
+            button.addEventListener('click', async function() {
                 const orderId = this.getAttribute('data-id');
                 if (confirm(`Êtes-vous sûr de vouloir supprimer la commande ${orderId}?`)) {
-                    // Remove from the array
-                    const index = ordersData.findIndex(o => o.id === orderId);
-                    if (index !== -1) {
-                        ordersData.splice(index, 1);
-                        // Update both server and localStorage
-                        try {
-                            // Get current data first
-                            getOrdersFromServer().then(data => {
-                                // Update orders array
-                                data.orders = ordersData;
-                                
-                                // Update server
-                                fetch(`${API_URL}/${BIN_ID}`, {
-                                method: 'PUT',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'X-Master-Key': API_KEY
-                                },
-                                body: JSON.stringify(data)
-                            });
-                            });
-                        } catch (error) {
-                            console.error('Error updating server:', error);
+                    try {
+                        // Delete order using ADMIN_ORDERS
+                        await ADMIN_ORDERS.deleteOrder(orderId);
+                        
+                        // Remove from the local array
+                        const index = ordersData.findIndex(o => o.id === orderId);
+                        if (index !== -1) {
+                            ordersData.splice(index, 1);
                         }
                         
-                        // Update localStorage as backup
-                        localStorage.setItem('orders', JSON.stringify(ordersData));
+                        // Update UI
                         updateDashboardStats(ordersData);
                         loadOrdersTable(ordersData);
                         setupEventListeners(ordersData);
+                        
+                        alert('Commande supprimée avec succès');
+                    } catch (error) {
+                        console.error('Error deleting order:', error);
+                        alert('Erreur lors de la suppression de la commande');
                     }
                 }
             });
@@ -298,7 +273,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // Update status select
-        document.getElementById('update-status').addEventListener('change', function() {
+        document.getElementById('update-status').addEventListener('change', async function() {
             const status = this.value;
             if (!status) return;
             
@@ -306,49 +281,40 @@ document.addEventListener('DOMContentLoaded', function() {
             const order = ordersData.find(o => o.id === orderId);
             
             if (order) {
-                order.status = status;
-                // Update both server and localStorage
                 try {
-                    // Get current data first
-                    getOrdersFromServer().then(data => {
-                        // Update orders array
-                        data.orders = ordersData;
-                        
-                        // Update server
-                        fetch(`${API_URL}/${BIN_ID}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Master-Key': API_KEY
-                        },
-                        body: JSON.stringify(data)
-                    });
-                    });
+                    // Update status using ADMIN_ORDERS
+                    await ADMIN_ORDERS.updateOrderStatus(orderId, status);
+                    
+                    // Update local order object
+                    order.status = status;
+                    
+                    // Update UI
+                    updateDashboardStats(ordersData);
+                    loadOrdersTable(ordersData);
+                    setupEventListeners(ordersData);
+                    
+                    // Update status in modal
+                    let statusText;
+                    switch(status) {
+                        case 'new': statusText = 'Nouvelle'; break;
+                        case 'processing': statusText = 'En traitement'; break;
+                        case 'shipped': statusText = 'Expédiée'; break;
+                        case 'delivered': statusText = 'Livrée'; break;
+                        case 'cancelled': statusText = 'Annulée'; break;
+                        default: statusText = status;
+                    }
+                    
+                    document.getElementById('modal-order-status').textContent = statusText;
+                    
+                    // Reset select
+                    this.value = '';
+                    
+                    alert('Statut mis à jour avec succès');
                 } catch (error) {
-                    console.error('Error updating server:', error);
+                    console.error('Error updating status:', error);
+                    alert('Erreur lors de la mise à jour du statut');
+                    this.value = '';
                 }
-                
-                // Update localStorage as backup
-                localStorage.setItem('orders', JSON.stringify(ordersData));
-                updateDashboardStats(ordersData);
-                loadOrdersTable(ordersData);
-                setupEventListeners(ordersData);
-                
-                // Update status in modal
-                let statusText;
-                switch(status) {
-                    case 'new': statusText = 'Nouvelle'; break;
-                    case 'processing': statusText = 'En traitement'; break;
-                    case 'shipped': statusText = 'Expédiée'; break;
-                    case 'delivered': statusText = 'Livrée'; break;
-                    case 'cancelled': statusText = 'Annulée'; break;
-                    default: statusText = status;
-                }
-                
-                document.getElementById('modal-order-status').textContent = statusText;
-                
-                // Reset select
-                this.value = '';
             }
         });
         
