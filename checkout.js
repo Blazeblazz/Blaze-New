@@ -59,7 +59,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 // Save order using our orders system
-                await ORDERS.saveOrder(orderData);
+                const saveResult = await ORDERS.saveOrder(orderData);
+                
+                // Also try to send email notification
+                if (typeof EMAIL_NOTIFICATION !== 'undefined') {
+                    try {
+                        await EMAIL_NOTIFICATION.sendOrderNotification(orderData);
+                    } catch (emailError) {
+                        console.error('Email notification failed:', emailError);
+                    }
+                }
                 
                 // Show confirmation
                 alert('Votre commande a été passée avec succès! Vous recevrez un appel pour confirmer.');
@@ -91,6 +100,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     emergencyOrders.push(emergencyOrder);
                     localStorage.setItem('emergency_orders', JSON.stringify(emergencyOrders));
                     console.log('Order saved to emergency backup');
+                    
+                    // Try to send email notification as last resort
+                    if (typeof EMAIL_NOTIFICATION !== 'undefined') {
+                        try {
+                            await EMAIL_NOTIFICATION.sendOrderNotification(emergencyOrder);
+                        } catch (emailError) {
+                            console.error('Emergency email notification failed:', emailError);
+                        }
+                    }
                     
                     // Still show success and redirect
                     alert('Votre commande a été passée avec succès! Vous recevrez un appel pour confirmer.');
