@@ -1,14 +1,7 @@
 // Admin Panel Functionality
 document.addEventListener('DOMContentLoaded', function() {
-    // Load the API script
-    const apiScript = document.createElement('script');
-    apiScript.src = '../api.js';
-    document.head.appendChild(apiScript);
-    
-    apiScript.onload = function() {
-        // Initialize admin panel after API script is loaded
-        initializeAdmin();
-    };
+    // Initialize admin panel
+    initializeAdmin();
     
     // Function to initialize admin panel
     async function initializeAdmin() {

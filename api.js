@@ -1,6 +1,6 @@
 // API functions for handling orders
 const API_URL = "https://api.jsonbin.io/v3/b";
-const API_KEY = "$2a$10$W7Y1w05rI7FhqCSUCB/tRuDJYO2fRlTwgv2s3je3OlExS3oOz9UzG"; // Replace with your actual API key from JSONBin.io
+const API_KEY = "$2b$10$W7Y1w05rI7FhqCSUCB/tRuDJYO2fRlTwgv2s3je3OlExS3oOz9UzG"; // Updated API key format
 const BIN_ID = "686583bb8561e97a50306adf"; // Your JSONBin.io bin ID
 
 // Function to save order to JSONBin.io

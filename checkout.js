@@ -1,18 +1,26 @@
 // Checkout Page Functionality
 document.addEventListener('DOMContentLoaded', function() {
+    // Load API script
+    const apiScript = document.createElement('script');
+    apiScript.src = 'api.js';
+    document.head.appendChild(apiScript);
+    
     // Load cart items
     loadCartItems();
     
     // Form submission
     const checkoutForm = document.getElementById('checkout-form');
     
-    checkoutForm.addEventListener('submit', function(e) {
+    checkoutForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         
         // Validate form
         if (validateForm()) {
             // Get form data
             const formData = new FormData(checkoutForm);
+            const cartItems = JSON.parse(localStorage.getItem('cart')) || [];
+            const subtotal = parseInt(document.getElementById('subtotal').textContent);
+            
             const orderData = {
                 customer: {
                     name: formData.get('name'),
@@ -20,40 +28,68 @@ document.addEventListener('DOMContentLoaded', function() {
                     city: formData.get('city')
                 },
                 payment: 'cod',
-                items: JSON.parse(localStorage.getItem('cart')) || [],
-                total: document.getElementById('total').textContent,
+                items: cartItems,
+                subtotal: subtotal,
+                shipping: 'Gratuit',
+                total: subtotal,
                 date: new Date().toISOString().split('T')[0],
                 status: 'new',
                 id: generateOrderId()
             };
             
-            // Send order data to server (simulated)
+            // Send order data to server
             console.log('Order submitted:', orderData);
             
             // Track purchase event for Facebook Pixel
             try {
-                const totalValue = parseInt(orderData.total);
                 fbq('track', 'Purchase', {
-                    value: totalValue,
+                    value: subtotal,
                     currency: 'MAD'
                 });
             } catch (e) {
                 console.log('Facebook Pixel error:', e);
             }
             
-            // Store order in localStorage for admin panel
-            saveOrder(orderData);
-            
-            // Show confirmation
-            alert('Votre commande a été passée avec succès! Vous recevrez un appel pour confirmer.');
-            
-            // Clear cart
-            localStorage.removeItem('cart');
-            
-            // Redirect to confirmation page
-            window.location.href = 'confirmation.html';
+            try {
+                // Wait for API script to load
+                await waitForApi();
+                
+                // Save to JSONBin
+                const success = await saveOrderToServer(orderData);
+                
+                if (!success) {
+                    // Fallback to localStorage if JSONBin fails
+                    saveOrderToLocalStorage(orderData);
+                }
+                
+                // Show confirmation
+                alert('Votre commande a été passée avec succès! Vous recevrez un appel pour confirmer.');
+                
+                // Clear cart
+                localStorage.removeItem('cart');
+                
+                // Redirect to confirmation page
+                window.location.href = 'confirmation.html';
+            } catch (error) {
+                console.error('Error saving order:', error);
+                alert('Une erreur est survenue. Veuillez réessayer.');
+            }
         }
     });
+    
+    // Wait for API script to load
+    function waitForApi() {
+        return new Promise((resolve) => {
+            const checkApi = () => {
+                if (window.saveOrderToServer) {
+                    resolve();
+                } else {
+                    setTimeout(checkApi, 100);
+                }
+            };
+            checkApi();
+        });
+    }
     
     // Form validation
     function validateForm() {
@@ -74,18 +110,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const prefix = 'BLZ-';
         const randomNum = Math.floor(10000 + Math.random() * 90000);
         return prefix + randomNum;
-    }
-    
-    // Save order to localStorage
-    function saveOrder(order) {
-        // Get existing orders
-        const orders = JSON.parse(localStorage.getItem('orders')) || [];
-        
-        // Add new order
-        orders.push(order);
-        
-        // Save updated orders
-        localStorage.setItem('orders', JSON.stringify(orders));
     }
     
     // Load cart items
