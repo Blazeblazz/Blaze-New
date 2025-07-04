@@ -1,9 +1,14 @@
 // Checkout Page Functionality
 document.addEventListener('DOMContentLoaded', function() {
-    // Load API script
-    const apiScript = document.createElement('script');
-    apiScript.src = 'api.js';
-    document.head.appendChild(apiScript);
+    // Check if API script is already loaded
+    if (!window.saveOrderToServer) {
+        console.log('Loading API script...');
+        const apiScript = document.createElement('script');
+        apiScript.src = 'api.js';
+        document.head.appendChild(apiScript);
+    } else {
+        console.log('API script already loaded');
+    }
     
     // Load cart items
     loadCartItems();
@@ -54,12 +59,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Wait for API script to load
                 await waitForApi();
                 
+                console.log('API loaded, saving order:', orderData);
+                
                 // Save to JSONBin
-                const success = await saveOrderToServer(orderData);
+                const success = await window.saveOrderToServer(orderData);
                 
                 if (!success) {
+                    console.warn('JSONBin save failed, using localStorage fallback');
                     // Fallback to localStorage if JSONBin fails
-                    saveOrderToLocalStorage(orderData);
+                    window.saveOrderToLocalStorage(orderData);
                 }
                 
                 // Show confirmation
@@ -72,21 +80,47 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.location.href = 'confirmation.html';
             } catch (error) {
                 console.error('Error saving order:', error);
-                alert('Une erreur est survenue. Veuillez réessayer.');
+                
+                // Save to localStorage as last resort
+                try {
+                    const orders = JSON.parse(localStorage.getItem('orders')) || [];
+                    orders.push(orderData);
+                    localStorage.setItem('orders', JSON.stringify(orders));
+                    console.log('Order saved to localStorage as fallback');
+                    
+                    // Still show success and redirect
+                    alert('Votre commande a été passée avec succès! Vous recevrez un appel pour confirmer.');
+                    localStorage.removeItem('cart');
+                    window.location.href = 'confirmation.html';
+                } catch (localStorageError) {
+                    console.error('Failed to save to localStorage:', localStorageError);
+                    alert('Une erreur est survenue. Veuillez réessayer.');
+                }
             }
         }
     });
     
     // Wait for API script to load
     function waitForApi() {
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
+            let attempts = 0;
+            const maxAttempts = 50; // 5 seconds max wait time
+            
             const checkApi = () => {
+                attempts++;
+                console.log(`Checking for API (attempt ${attempts})...`);
+                
                 if (window.saveOrderToServer) {
+                    console.log('API functions found!');
                     resolve();
+                } else if (attempts >= maxAttempts) {
+                    console.error('API functions not found after maximum attempts');
+                    reject(new Error('API functions not loaded'));
                 } else {
                     setTimeout(checkApi, 100);
                 }
             };
+            
             checkApi();
         });
     }

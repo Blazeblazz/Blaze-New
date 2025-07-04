@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSONBin Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>JSONBin API Test</h1>
+    
+    <div>
+        <button id="testConnection">Test Connection</button>
+        <button id="createBin">Create New Bin</button>
+        <button id="addTestOrder">Add Test Order</button>
+        <button id="viewOrders">View Orders</button>
+    </div>
+    
+    <h2>Results:</h2>
+    <div id="results">
+        <p>Click a button above to run a test.</p>
+    </div>
+    
+    <script src="api.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const resultsDiv = document.getElementById('results');
+            
+            // Display API configuration
+            resultsDiv.innerHTML = `
+                <h3>API Configuration:</h3>
+                <pre>API URL: ${API_URL}
+BIN ID: ${BIN_ID}
+API KEY: ${API_KEY ? API_KEY.substring(0, 10) + '...' : 'Not set'}</pre>
+            `;
+            
+            // Test Connection Button
+            document.getElementById('testConnection').addEventListener('click', async function() {
+                resultsDiv.innerHTML += `<p>Testing connection to JSONBin...</p>`;
+                
+                try {
+                    const data = await getOrdersFromServer();
+                    resultsDiv.innerHTML += `<p class="success">Connection successful!</p>`;
+                    resultsDiv.innerHTML += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } catch (error) {
+                    resultsDiv.innerHTML += `<p class="error">Connection failed: ${error.message}</p>`;
+                }
+            });
+            
+            // Create Bin Button
+            document.getElementById('createBin').addEventListener('click', async function() {
+                resultsDiv.innerHTML += `<p>Creating new bin...</p>`;
+                
+                try {
+                    const response = await fetch(`${API_URL}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Master-Key': API_KEY,
+                            'X-Bin-Name': 'BLAZE Orders'
+                        },
+                        body: JSON.stringify({ orders: [] })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Failed to create bin: ${response.status} ${response.statusText}`);
+                    }
+                    
+                    const result = await response.json();
+                    resultsDiv.innerHTML += `<p class="success">New bin created successfully!</p>`;
+                    resultsDiv.innerHTML += `<p>New Bin ID: <strong>${result.metadata.id}</strong></p>`;
+                    resultsDiv.innerHTML += `<p>Update your api.js file with this new ID.</p>`;
+                } catch (error) {
+                    resultsDiv.innerHTML += `<p class="error">Failed to create bin: ${error.message}</p>`;
+                }
+            });
+            
+            // Add Test Order Button
+            document.getElementById('addTestOrder').addEventListener('click', async function() {
+                resultsDiv.innerHTML += `<p>Adding test order...</p>`;
+                
+                const testOrder = {
+                    id: `TEST-${Date.now()}`,
+                    date: new Date().toISOString().split('T')[0],
+                    customer: {
+                        name: "Test Customer",
+                        phone: "(212) 123-456789",
+                        city: "Test City"
+                    },
+                    items: [
+                        {
+                            name: "TEST PRODUCT",
+                            price: "129",
+                            quantity: 1,
+                            color: "white",
+                            image: "images/products/Rise.webp"
+                        }
+                    ],
+                    subtotal: 129,
+                    shipping: "Gratuit",
+                    total: 129,
+                    status: "new",
+                    payment: "cod"
+                };
+                
+                try {
+                    const success = await saveOrderToServer(testOrder);
+                    if (success) {
+                        resultsDiv.innerHTML += `<p class="success">Test order added successfully!</p>`;
+                    } else {
+                        resultsDiv.innerHTML += `<p class="error">Failed to add test order.</p>`;
+                    }
+                } catch (error) {
+                    resultsDiv.innerHTML += `<p class="error">Error adding test order: ${error.message}</p>`;
+                }
+            });
+            
+            // View Orders Button
+            document.getElementById('viewOrders').addEventListener('click', async function() {
+                resultsDiv.innerHTML += `<p>Fetching orders...</p>`;
+                
+                try {
+                    const data = await getOrdersFromServer();
+                    const orders = data.orders || [];
+                    
+                    resultsDiv.innerHTML += `<p class="success">Found ${orders.length} orders:</p>`;
+                    resultsDiv.innerHTML += `<pre>${JSON.stringify(orders, null, 2)}</pre>`;
+                } catch (error) {
+                    resultsDiv.innerHTML += `<p class="error">Error fetching orders: ${error.message}</p>`;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

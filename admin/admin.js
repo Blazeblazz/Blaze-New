@@ -1,18 +1,37 @@
 // Admin Panel Functionality
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize admin panel
-    initializeAdmin();
+    console.log('Admin panel initializing...');
+    // Initialize admin panel with a slight delay to ensure API is loaded
+    setTimeout(initializeAdmin, 500);
     
     // Function to initialize admin panel
     async function initializeAdmin() {
         try {
-            // Try to get orders from server first
-            const serverData = await getOrdersFromServer();
-            let orders = serverData.orders || [];
+            console.log('Initializing admin panel...');
             
-            // If server request failed, fall back to localStorage
+            // Check if API functions are available
+            if (!window.getOrdersFromServer) {
+                console.error('API functions not available');
+                throw new Error('API functions not available');
+            }
+            
+            // Try to get orders from server first
+            console.log('Fetching orders from server...');
+            const serverData = await window.getOrdersFromServer();
+            console.log('Server data received:', serverData);
+            
+            let orders = [];
+            if (serverData && serverData.orders) {
+                orders = serverData.orders;
+                console.log(`Found ${orders.length} orders on server`);
+            }
+            
+            // If server request failed or returned no orders, check localStorage
             if (!orders || orders.length === 0) {
-                orders = JSON.parse(localStorage.getItem('orders')) || [];
+                console.log('No orders from server, checking localStorage...');
+                const localOrders = JSON.parse(localStorage.getItem('orders')) || [];
+                console.log(`Found ${localOrders.length} orders in localStorage`);
+                orders = localOrders;
             }
     
     // If no orders in localStorage, use sample data
