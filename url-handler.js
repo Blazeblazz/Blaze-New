@@ -1,4 +1,5 @@
-document.addEventListener('DOMContentLoaded', function() {
+// Run immediately and again when DOM is loaded
+(function() {
     // Product data mapping
     const productData = {
         'RISE': {
@@ -67,6 +68,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // Update page title
             document.title = product.title + ' - BLAZE Streetwear';
             
+            // Update HTML title element directly for better SEO
+            const titleElement = document.querySelector('title');
+            if (titleElement) {
+                titleElement.textContent = product.title + ' - BLAZE Streetwear';
+            }
+            
             // Update product name in breadcrumb
             const breadcrumbItem = document.querySelector('.breadcrumb li:last-child');
             if (breadcrumbItem) {
@@ -96,6 +103,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Run on page load
+    // Run immediately
+    updatePageInfo();
+})();
+
+// Also run when DOM is fully loaded
+document.addEventListener('DOMContentLoaded', function() {
     updatePageInfo();
 });
